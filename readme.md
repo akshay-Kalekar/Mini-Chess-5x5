@@ -33,5 +33,5 @@ http://localhost:3000/
 
 ## GitHub Link
 ```
-https://github.com/akshay-Kalekar/Akshay-Ajay-Kalekar-21BCE10028
+https://github.com/akshay-Kalekar/Akshay_Ajay_Kalekar_21BCE10028_HIT_WICKET
 ```
