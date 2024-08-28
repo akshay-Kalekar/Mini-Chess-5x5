@@ -1,9 +1,14 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { possibleMoves, piecesData } from "./utils";
-import ErrorNotification from "./ErrorNotification";
+import { possibleMoves, piecesData } from "./components/utils";
+import ErrorNotification from "./components/ErrorNotification";
+import { useSearchParams } from "next/navigation";
 
 const GameLayout = () => {
+    const searchParams = useSearchParams();
+    const type = searchParams.get('type');
+    const roomCode = searchParams.get('roomCode');
+
     const initailPossibleLayout = [
         ["", "", "", "", ""],
         ["", "", "", "", ""],
@@ -11,20 +16,18 @@ const GameLayout = () => {
         ["", "", "", "", ""],
         ["", "", "", "", ""],
     ];
+
     const [isLoading, setIsLoading] = useState(false);
     const [isResultModalOpen, setIsResultModalOpen] = useState(false);
     const [showErrorNotification, setShowErrorNotification] = useState(false);
     const [isVictory, setIsVictory] = useState(null);
     const [gameEnded, setGameEnded] = useState(false);
-    const [notify, setNotify] = useState(false);
     const [socket, setSocket] = useState(null);
     const [player, setPlayer] = useState(null);
     const [myTurn, setMyTurn] = useState(false);
-    const [layout, setLayout] = useState([]);
+    const [layout, setLayout] = useState(initailPossibleLayout);
     const [moveHistory, setMoveHistory] = useState([]);
-    const [possibleMoveLayout, setPossibleMoveLayout] = useState(
-        initailPossibleLayout
-    );
+    const [possibleMoveLayout, setPossibleMoveLayout] = useState(initailPossibleLayout);
     const [selectedPiece, setSelectedPiece] = useState({
         piece: "",
         pos_x: -1,
@@ -35,57 +38,74 @@ const GameLayout = () => {
         const ws = new WebSocket("ws://localhost:8080");
         setSocket(ws);
 
+        ws.onopen = () => {
+            if (roomCode && type == "CREATE_ROOM") {
+                ws.send(JSON.stringify({ type: 'CREATE_ROOM', roomCode }));
+            } else {
+                const newRoomCode = Math.random().toString(36).substr(2, 5);
+                ws.send(JSON.stringify({ type: 'JOIN_ROOM', roomCode: roomCode }));
+            }
+        };
+
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
             console.log("Message from server:", data);
-            if (data.message == "Game already in progress") {
-                setIsLoading(true);
-            }
-            if (data.type === "NEW_GAME") {
-                setLayout(data.layout);
-                setMyTurn(data.turn === player);
-                setMoveHistory([]);
-                setGameEnded(false);
-                setIsLoading(false);
-            }
-            if (data.type === "NEW_GAME" && !player) {
-                setPlayer(data.player);
-                setPlayer(data.player);
-                setMyTurn(data.turn === player);
-                setGameEnded(false);
-                setIsLoading(false);
-            }
-            if (data.type === "GAME_STATE_UPDATE") {
-                setLayout(data.layout);
-                setMyTurn(data.turn === player);
-                setMoveHistory(data.moveHistory);
-                setIsLoading(false);
-            }
 
-            if (data.type === "GAME_STATE_UPDATE" && !player) {
-                setPlayer(data.player);
-                setMyTurn(data.turn === data.player);
-                setMoveHistory(data.moveHistory);
-                setIsLoading(false);
-            }
+            switch (data.type) {
+                case 'ROOM_CREATED':
+                    setPlayer(data.player);
+                    setLayout(data.layout);
+                    setMyTurn(data.turn === data.player);
+                    break;
 
-            if (data.type === "GAME_OVER" && data.result) {
-                if (data.result === player) {
-                    setIsVictory(true);
-                } else {
-                    setIsVictory(false);
-                }
-                setIsResultModalOpen(true);
-                setGameEnded(true);
-            }
+                case 'ROOM_JOINED':
+                    setPlayer(data.player);
+                    setLayout(data.layout);
+                    setMyTurn(data.turn === data.player);
+                    break;
 
-            if (data.type === "INVALID_MOVE" && player) {
-                setShowErrorNotification(true);
+                case 'PLAYER_JOINED':
+                    // Handle when a player joins
+                    break;
+
+                case 'NEW_GAME':
+                    setLayout(data.layout);
+                    setMyTurn(data.turn === player);
+                    setMoveHistory([]);
+                    setGameEnded(false);
+                    break;
+
+                case 'GAME_STATE_UPDATE':
+                    setLayout(data.layout);
+                    setMyTurn(data.turn === player);
+                    setMoveHistory(data.moveHistory);
+                    break;
+
+                case 'GAME_OVER':
+                    if (data.result === player) {
+                        setIsVictory(true);
+                    } else {
+                        setIsVictory(false);
+                    }
+                    setIsResultModalOpen(true);
+                    setGameEnded(true);
+                    break;
+
+                case 'INVALID_MOVE':
+                    setShowErrorNotification(true);
+                    break;
+
+                case 'ERROR':
+                    console.error(data.message);
+                    break;
+
+                default:
+                    break;
             }
         };
 
         return () => ws.close();
-    }, [player]);
+    }, [player, roomCode]);
 
     const selectPiece = (e) => {
         const piece = e.target.textContent;
@@ -129,6 +149,7 @@ const GameLayout = () => {
                     layout,
                     myTurn,
                     selectedPiece,
+                    roomCode, // Added roomCode to ensure correct game room is updated
                 })
             );
 
@@ -161,6 +182,7 @@ const GameLayout = () => {
                     layout,
                     myTurn,
                     selectedPiece,
+                    roomCode, // Added roomCode to ensure correct game room is updated
                 })
             );
 
@@ -243,7 +265,7 @@ const GameLayout = () => {
                                 ${possibleMoveLayout[rowIndex][colIndex] === "*"
                                     ? "bg-green-300"
                                     : ""
-                                } ${myTurn && player ==cell[0]  ? "text-green-400" :""} `}
+                                } ${myTurn && player == cell[0] ? "text-green-400" : ""} `}
                             onClick={selectPiece}
                         >
                             {cell !== "*" ? cell : ""}
@@ -282,6 +304,7 @@ const GameLayout = () => {
                                     socket.send(
                                         JSON.stringify({
                                             type: "NEW_GAME",
+                                            roomCode, // Added roomCode to ensure new game starts in correct room
                                         })
                                     );
                                 }}
@@ -305,6 +328,7 @@ const GameLayout = () => {
                         JSON.stringify({
                             type: "RESIGN",
                             result: result,
+                            roomCode, // Added roomCode to ensure resignation affects the correct room
                         })
                     );
                     setGameEnded(true);
@@ -326,6 +350,7 @@ const GameLayout = () => {
                             JSON.stringify({
                                 type: "NEW_GAME",
                                 result: result,
+                                roomCode, // Added roomCode to ensure new game starts in correct room
                             })
                         );
                     }}
