@@ -241,17 +241,20 @@ const GameLayout = () => {
             </div>
         );
     return (
-        <div className="w-fit h-fit flex flex-col gap-2">
-            <div className="h-[10vh]">
+        <div className="flex h-[100vh] w-full justify-center px-16">
+        <div className="w-full h-fit flex flex-col gap-2 ">
+            <div className="h-[5vh] ">
                 {showErrorNotification && (
                     <ErrorNotification
-                        setShowErrorNotification={setShowErrorNotification}
+                    setShowErrorNotification={setShowErrorNotification}
                     />
                 )}
             </div>
-            player = {myTurn ? "Your Turn" : "Waiting for opponent"},{ }
+            <div className="flex gap-2 justify-between h-[90vh]  ">
+                <div className="w-3/12 h-full"> {moveHistory && renderMoveHistory()} </div>
+                <div className="w-6/12 text-center gap-2 flex flex-col h-full ">player = {myTurn ? "Your Turn" : "Waiting for opponent"},{ }
             {layout.map((row, rowIndex) => (
-                <div key={rowIndex} className="w-full h-full flex gap-2 justify-center">
+                <div key={rowIndex} className=" flex gap-2 justify-center">
                     {row.map((cell, colIndex) => (
                         <div
                             key={colIndex}
@@ -267,22 +270,23 @@ const GameLayout = () => {
                                     : ""
                                 } ${myTurn && player == cell[0] ? "text-green-400" : ""} `}
                             onClick={selectPiece}
-                        >
+                            >
                             {cell !== "*" ? cell : ""}
                         </div>
                     ))}
                 </div>
             ))}
-            <div className="w-full justify-center gap-4 text-center">
-                {selectedPiece.piece && (
-                    <div>Selected Piece = {selectedPiece.piece}</div>
-                )}
-                <div className="flex w-full justify-center gap-4 py-2">
-                    {renderPossibleMoveButtons()}
+            <div className="w-full justify-center gap-4 text-center p-4">
+                <div className="flex flex-col w-full justify-center gap-4  h-[10vh] ">
+                    {selectedPiece.piece && (
+                    
+                        <div>Selected Piece = {selectedPiece.piece}</div>
+                    )}
+                    <div className="flex gap-4 justify-center w-full">
+                        {renderPossibleMoveButtons()}
+                    </div>
                 </div>
-            </div>
-            {moveHistory && renderMoveHistory()}
-            {isResultModalOpen && (
+                 {isResultModalOpen && (
                 <dialog open className="modal">
                     <div className="modal-box">
                         <h3 className="font-bold text-lg">
@@ -294,7 +298,7 @@ const GameLayout = () => {
                             <button
                                 className="btn"
                                 onClick={() => setIsResultModalOpen(false)}
-                            >
+                                >
                                 Close
                             </button>
                             <button
@@ -308,13 +312,19 @@ const GameLayout = () => {
                                         })
                                     );
                                 }}
-                            >
+                                >
                                 New Game
                             </button>
                         </div>
                     </div>
                 </dialog>
             )}
+            
+
+                </div>
+                </div>
+                <div className="w-3/12">
+                <div className="flex gap-4 flex-row-reverse ">
             <button
                 className="btn"
                 onClick={() => {
@@ -338,26 +348,30 @@ const GameLayout = () => {
             </button>
             {gameEnded && (
                 <button
-                    className="btn"
-                    onClick={() => {
-                        let result;
-                        if (player == "A") {
-                            result = "B";
-                        } else {
-                            result = "A";
-                        }
-                        socket.send(
-                            JSON.stringify({
-                                type: "NEW_GAME",
-                                result: result,
-                                roomCode, // Added roomCode to ensure new game starts in correct room
-                            })
-                        );
-                    }}
+                className="btn"
+                onClick={() => {
+                    let result;
+                    if (player == "A") {
+                        result = "B";
+                    } else {
+                        result = "A";
+                    }
+                    socket.send(
+                        JSON.stringify({
+                            type: "NEW_GAME",
+                            result: result,
+                            roomCode, // Added roomCode to ensure new game starts in correct room
+                        })
+                    );
+                }}
                 >
                     New Game
                 </button>
             )}
+             </div></div>
+            </div>     
+           
+            </div>
         </div>
     );
 };
