@@ -3,8 +3,10 @@ import React, { useState, useEffect } from "react";
 import { possibleMoves, piecesData } from "./components/utils";
 import ErrorNotification from "./components/ErrorNotification";
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 const GameLayout = () => {
+    const router = useRouter();
     const searchParams = useSearchParams();
     const type = searchParams.get('type');
     const roomCode = searchParams.get('roomCode');
@@ -17,7 +19,8 @@ const GameLayout = () => {
         ["", "", "", "", ""],
     ];
 
-    const [isLoading, setIsLoading] = useState(false);
+    const [isError, setIsError] = useState(false);
+    const [error, setError] = useState("");
     const [isResultModalOpen, setIsResultModalOpen] = useState(false);
     const [showErrorNotification, setShowErrorNotification] = useState(false);
     const [isVictory, setIsVictory] = useState(null);
@@ -50,7 +53,8 @@ const GameLayout = () => {
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
             console.log("Message from server:", data);
-
+            setIsError(false);
+            setError("");
             switch (data.type) {
                 case 'ROOM_CREATED':
                     setPlayer(data.player);
@@ -96,7 +100,8 @@ const GameLayout = () => {
                     break;
 
                 case 'ERROR':
-                    console.error(data.message);
+                    setIsError(true)
+                    setError(data.message);
                     break;
 
                 default:
@@ -233,11 +238,15 @@ const GameLayout = () => {
         return null;
     };
 
-    if (isLoading)
+    if (isError)
         return (
-            <div>
-                <div> Game is already going on</div>
-                <div> Either visit the tabs of ongoing game or restart server</div>
+            <div className="h-[100vh] text-center flex flex-col justify-center  align-middle  items-center  gap-8" >
+                <div className="text-5xl"> Do a double check</div>
+                <div> {error}
+                </div>
+                <button className="btn btn-error w-1/12 " onClick={()=>{
+                    router.back();
+                }}> Back</button>
             </div>
         );
     return (

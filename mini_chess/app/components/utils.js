@@ -72,7 +72,7 @@ export const Loading  = () =>{
 }
 
 import React, { useState } from 'react';
-import { useRouter } from "next/navigation";;
+import { useRouter } from "next/navigation";
 
 export const CodeInput = ({ button, setOption, }) => {
     const router = useRouter();
