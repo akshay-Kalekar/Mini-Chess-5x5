@@ -1,4 +1,3 @@
-
 import Image from 'next/image';
 import ruleIcon from '../../public/rule.svg';
 export const RulesModal = () => {

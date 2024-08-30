@@ -1,86 +1,11 @@
-const WebSocket = require('ws');
+import { validMoves, broadcastToRoom, startNewGame} from './game_function.js';
+import { piecesData, initialGameState } from './game_data.js';
 
-const wss = new WebSocket.Server({ port: 8080 });
+import WebSocket, { WebSocketServer } from 'ws';
 
+// Create a WebSocket server instance
+const wss = new WebSocketServer({ port: 8080 });
 let rooms = {};
-
-const piecesData = {
-  'P': { 'U': [-1, 0], 'D': [+1, 0], 'R': [0, +1], 'L': [0, -1] },
-  'H1': { 'U': [-2, 0], 'D': [+2, 0], 'R': [0, +2], 'L': [0, -2] },
-  'H2': { 'BL': [+2, -2], 'BR': [+2, +2], 'FL': [-2, -2], 'FR': [-2, +2] }
-};
-
-const initialGameState = () => ({
-  layout: [
-    ["A-P1", "A-P2", "A-P3", "A-H1", "A-H2"],
-    ["", "", "", "", ""],
-    ["", "", "", "", ""],
-    ["", "", "", "", ""],
-    ["B-P1", "B-P2", "B-P3", "B-H1", "B-H2"]
-  ],
-  turn: 'A',
-  result: '',
-  possibleMoves: [],
-  moveHistory: [],
-  playerAPiece: 5,
-  playerBPiece: 5,
-});
-
-const validMoves = (piece, check_x, check_y, layout, selectedPiece, myTurn, gameState) => {
-  let moves;
-  if (piece.slice(-2)[0] === 'P') {
-    moves = piecesData['P'];
-  } else if (piece.slice(-2)[0] === 'H') {
-    moves = piecesData[piece.slice(-2)];
-  }
-
-  let curr_x = Number(selectedPiece["pos_x"]);
-  let curr_y = Number(selectedPiece["pos_y"]);
-
-  for (let direction in moves) {
-    let pos_x = curr_x + moves[direction][0];
-    let pos_y = curr_y + moves[direction][1];
-
-    if (pos_x >= 0 && pos_x < 5 && pos_y >= 0 && pos_y < 5) {
-      if (pos_x === check_x && pos_y === check_y) {
-        if (gameState.turn === 'B' && layout[pos_x][pos_y].slice(0, 1) == 'A') {
-          gameState.playerAPiece -= 1;
-          if (gameState.playerAPiece === 0) {
-            gameState.result = 'B';
-          }
-          return { valid: true, movement: direction };
-        } else if (gameState.turn === 'A' && layout[pos_x][pos_y].slice(0, 1) == 'B') {
-          gameState.playerBPiece -= 1;
-          if (gameState.playerBPiece === 0) {
-            gameState.result = 'A';
-          }
-          return { valid: true, movement: direction };
-        }
-        return { valid: true, movement: `${direction}` };
-      }
-
-      if (layout[pos_x][pos_y] === "" || (myTurn && layout[pos_x][pos_y].slice(0, 1) === 'B') || (!myTurn && layout[pos_x][pos_y].slice(0, 1) === 'A')) {
-        layout[pos_x][pos_y] = "*";
-      }
-    }
-  }
-  gameState.layout = layout;
-  return { valid: false, movement: "" };
-};
-
-const startNewGame = (roomCode) => {
-  if (rooms[roomCode]) {
-    rooms[roomCode].gameState = initialGameState();
-    broadcastToRoom(roomCode, {
-      type: 'NEW_GAME',
-      layout: rooms[roomCode].gameState.layout,
-      turn: rooms[roomCode].gameState.turn,
-      result: "",
-      moveHistory: rooms[roomCode].gameState.moveHistory,
-    });
-  }
-};
-
 wss.on('connection', (ws) => {
   ws.on('message', (message) => {
     const event = JSON.parse(message);
@@ -121,7 +46,7 @@ wss.on('connection', (ws) => {
           turn: rooms[roomCode].gameState.turn,
           result: rooms[roomCode].gameState.result,
         }));
-        broadcastToRoom(roomCode, {
+        broadcastToRoom(rooms,roomCode, {
           type: 'PLAYER_JOINED',
           player,
         });
@@ -142,7 +67,7 @@ wss.on('connection', (ws) => {
       const x = parseInt(pos_x);
       const y = parseInt(pos_y);
 
-      const isValid = validMoves(piece, x, y, layout, selectedPiece, myTurn, gameState);
+      const isValid = validMoves(piece, x, y, layout, selectedPiece, myTurn, gameState,piecesData);
 
       if (isValid.valid) {
         let move = selectedPiece.piece + ' : ' + isValid.movement;
@@ -157,14 +82,14 @@ wss.on('connection', (ws) => {
         gameState.layout = newLayout;
         gameState.turn = newTurn;
         if (gameState.result) {
-          broadcastToRoom(roomCode, {
+          broadcastToRoom(rooms,roomCode, {
             type: 'GAME_OVER',
             result: gameState.result,
             moveHistory: gameState.moveHistory,
             turn: gameState.turn,
           });
         } else {
-          broadcastToRoom(roomCode, {
+          broadcastToRoom(rooms,roomCode, {
             type: 'GAME_STATE_UPDATE',
             layout: gameState.layout,
             turn: gameState.turn,
@@ -179,13 +104,13 @@ wss.on('connection', (ws) => {
         }));
       }
     } else if (event.type === 'NEW_GAME') {
-      startNewGame(event.roomCode);
+          startNewGame(rooms,event.roomCode,initialGameState);
     } else if (event.type === 'RESIGN') {
-      const roomCode = event.roomCode;
-      const gameState = rooms[roomCode].gameState;
-      gameState.result = event.result;
-      gameState.moveHistory = [];
-      broadcastToRoom(roomCode, {
+          const roomCode = event.roomCode;
+          const gameState = rooms[roomCode].gameState;
+          gameState.result = event.result;
+          gameState.moveHistory = [];
+      broadcastToRoom(rooms,roomCode, {
         type: 'GAME_OVER',
         result: gameState.result,
         moveHistory: gameState.moveHistory
@@ -204,12 +129,6 @@ wss.on('connection', (ws) => {
   });
 });
 
-const broadcastToRoom = (roomCode, data) => {
-  rooms[roomCode].players.forEach(({ ws }) => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(data));
-    }
-  });
-};
+
 
 console.log('WebSocket server running on ws://localhost:8080');
