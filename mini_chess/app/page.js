@@ -17,11 +17,13 @@ export default function Home() {
         <div className="max-w-md p-4">
           <h1 className="text-6xl font-extrabold">Mini Chess</h1>
           <p className="py-6 text-4xl font-bold">5 x 5</p>
-          <div className="flex gap-12 justify-center h-[20vh]">
+          <div className="flex flex-col  gap-6 justify-center items-center h-[20vh]">
+            
             {option ? (
               <>
+              <div className="flex gap-6 justify-center flex-wrap w-full pt-16">
                 <button
-                  className="btn btn-secondary"
+                  className="btn btn-secondary w-1/3"
                   onClick={() => {
                     setButtonOption("Create");
                     setOption(false);
@@ -30,7 +32,7 @@ export default function Home() {
                   Create Room
                 </button>
                 <button
-                  className="btn btn-info"
+                  className="btn btn-info w-1/3"
                   onClick={() => {
                     setButtonOption("Join");
                     setOption(false);
@@ -38,13 +40,24 @@ export default function Home() {
                 >
                   Join Room
                 </button>
+                <button className="btn btn-error w-1/3 " 
+                  onClick={() => {
+                    setButtonOption("Spectate");
+                    setOption(false);
+                  }}
+                > Spectate </button>
+                <button className="btn btn-warning w-1/3"> Practice Room </button>
+                </div>
               </>
             ) : (
               <CodeInput
-                button={buttonOption}
-                setOption={setOption}
+              button={buttonOption}
+              setOption={setOption}
               />
             )}
+            
+            
+            
           </div>
         </div>
       </div>

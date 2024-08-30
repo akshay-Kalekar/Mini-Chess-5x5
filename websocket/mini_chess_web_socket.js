@@ -1,8 +1,18 @@
+import http from 'http';
 import { validMoves, broadcastToRoom, startNewGame} from './game_function.js';
 import { piecesData, initialGameState } from './game_data.js';
 
 import WebSocket, { WebSocketServer } from 'ws';
 
+const server = http.createServer((req, res) => {
+  if (req.method === 'GET' && req.url === '/hello') {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Hello, World!');
+  } else {
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Not Found');
+  }
+});
 // Create a WebSocket server instance
 const wss = new WebSocketServer({ port: 8080 });
 let rooms = {};
@@ -10,7 +20,26 @@ wss.on('connection', (ws) => {
   ws.on('message', (message) => {
     const event = JSON.parse(message);
     console.log('Received:', event);
+    if (event.type === 'SPECTATE_ROOM'){
+      const roomCode = event.roomCode;
+      if(!rooms[roomCode]){
+        ws.send(JSON.stringify({ type: 'ERROR', message: 'Room code does not exist' }));
+      }else{
+        if(rooms[roomCode].players.length<2){
+          ws.send(JSON.stringify({ type: 'ERROR', message: 'Match not started yet' }));
+        }
+        rooms[roomCode].players.push({ ws, player:'' });
 
+        ws.send(JSON.stringify({
+          type: 'SPECTATOR_JOINED',
+          roomCode,
+          player: '',
+          layout: rooms[roomCode].gameState.layout,
+          turn: rooms[roomCode].gameState.turn,
+          result: rooms[roomCode].gameState.result,
+        }));
+      }
+    }
     if (event.type === 'CREATE_ROOM') {
       const roomCode = event.roomCode;
       if (rooms[roomCode]) {
@@ -131,4 +160,7 @@ wss.on('connection', (ws) => {
 
 
 
-console.log('WebSocket server running on ws://localhost:8080');
+
+server.listen(8000, () => {
+  console.log('HTTP and WebSocket server running on http://localhost:8080');
+});

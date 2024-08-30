@@ -1,6 +1,7 @@
 {
   "type": "module",
   "dependencies": {
+    "http": "^0.0.1-security",
     "nodemon": "^3.1.4",
     "websocket": "^1.0.35",
     "ws": "^8.18.0"

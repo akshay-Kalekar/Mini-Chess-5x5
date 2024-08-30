@@ -80,8 +80,11 @@ export const CodeInput = ({ button, setOption, }) => {
     const handleClick = (roomCode) => {
       if(button=='Join'){
           router.push(`/room?roomCode=${code}&type=JOIN_ROOM`);
-        }else{
+        }else if(button=='Create'){
           router.push(`/room?roomCode=${code}&type=CREATE_ROOM`);
+      }
+      else if(button=='Spectate'){
+        router.push(`/room?roomCode=${code}&type=SPECTATE_ROOM`);
       }
     };
 

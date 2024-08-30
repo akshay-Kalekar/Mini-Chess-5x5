@@ -42,11 +42,15 @@ const GameLayout = () => {
         setSocket(ws);
 
         ws.onopen = () => {
+
             if (roomCode && type == "CREATE_ROOM") {
                 ws.send(JSON.stringify({ type: 'CREATE_ROOM', roomCode }));
-            } else {
+            } else if(roomCode && type == "JOIN_ROOM") {
                 const newRoomCode = Math.random().toString(36).substr(2, 5);
                 ws.send(JSON.stringify({ type: 'JOIN_ROOM', roomCode: roomCode }));
+            }else if(roomCode && type == "SPECTATE_ROOM"){
+                const newRoomCode = Math.random().toString(36).substr(2, 5);
+                ws.send(JSON.stringify({ type: 'SPECTATE_ROOM', roomCode: roomCode }));
             }
         };
 
