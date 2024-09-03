@@ -30,7 +30,7 @@ export const RulesModal = () => {
               <br/>
               <strong>2. Hero1: (H1)</strong><br/>
               Moves two blocks straight in any direction.<br/>
-              Kills any opponent's character in its path.<br/>
+              Kills any opponent character in its path.<br/>
               <strong>Move commands:</strong><br/>
               <ul className="list-disc pl-5">
                 <li>L (Left)</li>
@@ -41,7 +41,7 @@ export const RulesModal = () => {
               <br/>
               <strong>3. Hero2: (H2)</strong><br/>
               Moves two blocks diagonally in any direction.<br/>
-              Kills any opponent's character in its path.<br/>
+              Kills any opponent character in its path.<br/>
               <strong>Move commands:</strong><br/>
               <ul className="list-disc pl-5">
                 <li>FL (Forward-Left)</li>
