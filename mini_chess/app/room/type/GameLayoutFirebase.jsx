@@ -31,6 +31,7 @@ export const GameLayoutFirebase = () => {
     const [layout, setLayout] = useState(initialLayout);
     const [moveHistory, setMoveHistory] = useState([]);
     const [possibleMoveLayout, setPossibleMoveLayout] = useState(initialLayout);
+    const [playingPlayer,setPlayingPlayer] = useState('A');
     const [selectedPiece, setSelectedPiece] = useState({
         piece: "",
         pos_x: -1,
@@ -66,12 +67,16 @@ export const GameLayoutFirebase = () => {
             } else if (type === 'JOIN_ROOM' && !player) {
                 setPlayer('B');
             }
+            else if(type==='SPECTATE_ROOM' && !player){
+                setPlayer('S');
+            }
 
             setLayout(data.gameState.layout);
+            setPlayingPlayer(data.gameState.turn);
             setMyTurn(data.gameState.turn === player);
             setMoveHistory(data.gameState.moveHistory);
 
-            if (type != 'SPECTATOR_ROOM' && data.gameState.result) {
+            if (type != 'SPECTATE_ROOM' && data.gameState.result) {
                 setIsVictory(data.gameState.result === player);
                 setIsResultModalOpen(true);
                 setGameEnded(true);
@@ -158,13 +163,34 @@ export const GameLayoutFirebase = () => {
         const move = moves[direction];
 
         if (move) {
-            const newPosX = parseInt(selectedPiece.pos_x) + move[0];
-            const newPosY = parseInt(selectedPiece.pos_y) + move[1];
+            const x = parseInt(selectedPiece.pos_x) + move[0];
+            const y = parseInt(selectedPiece.pos_y) + move[1];
+            const gameS = { ...gameState };
+            const isValidMove = validMoves(selectedPiece.piece, x, y, layout, selectedPiece, myTurn, gameS, piecesData);
 
-            const newLayout = [...layout];
-            newLayout[selectedPiece.pos_x][selectedPiece.pos_y] = "";
-            newLayout[newPosX][newPosY] = selectedPiece.piece;
-            setLayout(newLayout);
+            if (isValidMove.valid) {
+                const newLayout = [...layout];
+                newLayout[selectedPiece.pos_x][selectedPiece.pos_y] = "";
+                newLayout[x][y] = selectedPiece.piece;
+                setLayout(newLayout);
+
+                const nextTurn = player === 'A' ? 'B' : 'A';
+
+                updateGameState(roomCode, {
+                    layout: newLayout,
+                    turn: nextTurn,
+                    result: gameS.result,
+                    moveHistory: gameS.moveHistory,
+                    playerAPiece: gameS.playerAPiece,
+                    playerBPiece: gameS.playerBPiece
+                });
+
+                setGameState({ ...gameS, layout: newLayout, turn: nextTurn });
+            } else {
+                setError("Invalid Move");
+                setShowErrorNotification(true);
+            }
+
             setSelectedPiece({ piece: "", pos_x: -1, pos_y: -1 });
             setPossibleMoveLayout(initialLayout);
         }
@@ -232,7 +258,20 @@ export const GameLayoutFirebase = () => {
             </div>
             <div className="flex gap-2 justify-between h-[90vh]  ">
                 <div className="w-3/12 h-full"> {moveHistory && renderMoveHistory()} </div>
-                <div className="w-6/12 text-center gap-2 flex flex-col h-full ">player = {myTurn ? "Your Turn" : "Waiting for opponent"},{ }
+                
+                <div className="w-6/12 text-center gap-2 flex flex-col h-full ">
+            {
+                player=='S' ?
+                <>
+                    Move of : {playingPlayer}
+                </>     
+            :
+            <>
+                {myTurn ? "Your Turn" : "Waiting for opponent"}
+            </>
+
+            }    
+
             {layout.map((row, rowIndex) => (
                 <div key={rowIndex} className=" flex gap-2 justify-center">
                     {row.map((cell, colIndex) => (
@@ -286,6 +325,7 @@ export const GameLayoutFirebase = () => {
                                 onClick={() => {
                                     setIsResultModalOpen(false);
                                     createRoom(roomCode)
+                                    setGameEnded(false)
                                 }}
                                 >
                                 New Game
@@ -309,7 +349,10 @@ export const GameLayoutFirebase = () => {
                     } else {
                         result = "A";
                     }
-                    createRoom(roomCode)
+                    updateGameState(roomCode, {
+                        ...gameState,
+                        result: player=='A' ? 'B ': 'A',
+                        });
                     setGameEnded(true);
                 }}
             >
@@ -326,6 +369,7 @@ export const GameLayoutFirebase = () => {
                         result = "A";
                     }
                     createRoom(roomCode)
+                    setGameEnded(false)
                 }}
                 >
                     New Game
