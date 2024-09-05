@@ -1,9 +1,8 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { possibleMoves, piecesData } from "./components/utils";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import ErrorNotification from "./components/ErrorNotification";
-import { useSearchParams } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { piecesData, possibleMoves } from "./components/utils";
 
 const GameLayout = () => {
     const router = useRouter();
@@ -201,8 +200,8 @@ const GameLayout = () => {
             moveHistory.length > 10 ? moveHistory.slice(-10) : moveHistory;
         return (
             <div className="move-history">
-                <h3 className="text-lg font-semibold">Move History</h3>
-                <ul className="grid grid-cols-2 gap-4">
+                <h3 className="text-lg font-semibold text-xl">Move History</h3>
+                <ul className="grid grid-cols-2 gap-4 text-lg">
                     {lastMoves.map((move, index) => (
                         <li key={index} className="list-disc list-inside">
                             {move}
@@ -240,7 +239,7 @@ const GameLayout = () => {
 
     if (isError)
         return (
-            <div className="h-[100vh] text-center flex flex-col justify-center  align-middle  items-center  gap-8" >
+            <div className="h-[100vh] text-center flex flex-col justify-center  align-middle  items-center  gap-8 font-mono">
                 <div className="text-5xl"> Do a double check</div>
                 <div> {error}
                 </div>
@@ -250,7 +249,7 @@ const GameLayout = () => {
             </div>
         );
     return (
-        <div className="flex h-[100vh] w-full justify-center px-16">
+        <div className="flex h-[100vh] w-full justify-center px-16 font-mono">
         <div className="w-full h-fit flex flex-col gap-2 ">
             <div className="h-[5vh] ">
                 {showErrorNotification && (
@@ -261,7 +260,7 @@ const GameLayout = () => {
             </div>
             <div className="flex gap-2 justify-between h-[90vh]  ">
                 <div className="w-3/12 h-full"> {moveHistory && renderMoveHistory()} </div>
-                <div className="w-6/12 text-center gap-2 flex flex-col h-full ">player = {myTurn ? "Your Turn" : "Waiting for opponent"},{ }
+                <div className="w-6/12 text-center gap-2 flex flex-col h-full text-lg">player = {myTurn ? "Your Turn" : "Waiting for opponent"},{ }
             {layout.map((row, rowIndex) => (
                 <div key={rowIndex} className=" flex gap-2 justify-center">
                     {row.map((cell, colIndex) => (
@@ -269,11 +268,11 @@ const GameLayout = () => {
                             key={colIndex}
                             data-x={rowIndex}
                             data-y={colIndex}
-                            className={`border-2 border-white w-16 h-16 text-center align-center py-4 
+                            className={`border-2 border-white w-16 h-16 text-center align-center py-4 shadow shadow-white hover:bg-gray-900 hover:text-xl
                                 ${cell === selectedPiece.piece && cell !== ""
                                     ? "bg-gray-600"
                                     : ""
-                                } 
+                                }
                                 ${possibleMoveLayout[rowIndex][colIndex] === "*"
                                     ? "bg-green-300"
                                     : ""
