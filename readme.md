@@ -31,6 +31,5 @@ http://localhost:3000/
 - **Invalid Move Notification:** Alerts for incorrect moves that fade away after a short time.
 - **Color Theme Selection:** Customize the game's color theme.
 
-## GitHub Link
-https://github.com/akshay-Kalekar/Akshay_Ajay_Kalekar_21BCE10028_HIT_WICKET
+
 
